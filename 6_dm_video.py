@@ -31,6 +31,8 @@ import time
 import cv2
 import numpy as np
 import json
+import os
+import imutils
 from datetime import datetime
 
 print ("You can press Q to quit this script!")
@@ -71,10 +73,12 @@ img_height = int (cam_height * scale_ratio)
 capture = np.zeros((img_height, img_width, 4), dtype=np.uint8)
 print ("Scaled image resolution: "+str(img_width)+" x "+str(img_height))
 
+cam_framerate = 20
+
 # Initialize the camera
 camera = PiCamera(stereo_mode='side-by-side',stereo_decimate=False)
 camera.resolution=(cam_width, cam_height)
-camera.framerate = 20
+camera.framerate = cam_framerate
 #camera.hflip = True
 
 # Initialize interface windows
@@ -111,6 +115,9 @@ def stereo_depth_map(rectified_pair):
     cv2.imshow("Image", disparity_color)
     key = cv2.waitKey(1) & 0xFF   
     if key == ord("q"):
+        dm_writer.release()
+        left_writer.release()
+        right_writer.release()
         quit();
     return disparity_color
 
@@ -155,7 +162,15 @@ leftMapY = npzfile['leftMapY']
 rightMapX = npzfile['rightMapX']
 rightMapY = npzfile['rightMapY']
 
+output = 'vids'
 
+dm_path = os.path.join(output, "dm.avi")
+left_path = os.path.join(output, "left.avi")
+right_path = os.path.join(output, "right.avi")
+fourcc = cv2.VideoWriter_fourcc(*"H264")
+dm_writer = None
+left_writer = None
+right_writer = None
 
 # capture frames from the camera
 for frame in camera.capture_continuous(capture, format="bgra", use_video_port=True, resize=(img_width,img_height)):
@@ -181,5 +196,18 @@ for frame in camera.capture_continuous(capture, format="bgra", use_video_port=Tr
 
     t2 = datetime.now()
     print ("DM build time: " + str(t2-t1))
+    
+    imgL300 = imutils.resize(imgLcut, width=300)
+    imgR300 = imutils.resize(imgRcut, width=300)
+    disparity300 = imutils.resize(disparity, width=300)
 
-
+    if dm_writer is None:
+        (h, w) = disparity300.shape[:2]
+        dm_writer = cv2.VideoWriter(dm_path, fourcc, cam_framerate, (w, h), True)
+        (h, w) = imgL300.shape[:2]
+        left_writer = cv2.VideoWriter(left_path, fourcc, cam_framerate, (w, h), False)
+        (h, w) = imgR300.shape[:2]
+        right_writer = cv2.VideoWriter(right_path, fourcc, cam_framerate, (w, h), False)
+    dm_writer.write(disparity300)
+    left_writer.write(imgL300)
+    right_writer.write(imgR300)

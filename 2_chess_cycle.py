@@ -38,7 +38,7 @@ print("You can press 'Q' to quit this script.")
 
 # Photo session settings
 total_photos = 50             # Number of images to take
-countdown = 5                 # Interval for count-down timer, seconds
+countdown = 3                 # Interval for count-down timer, seconds
 font=cv2.FONT_HERSHEY_SIMPLEX # Cowntdown timer font
  
 # Camera settimgs
